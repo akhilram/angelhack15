@@ -3,9 +3,15 @@
 $category = $_GET["category"];
 switch ($category) {
 	case 1:
+	// top stories
 	$query = 'http://api.nytimes.com/svc/topstories/v1/home.json?api-key=31f908317e61cdf63f264bb88b75881c:14:72395557';
 	break;
 	
+	case 2:
+	// most popular
+	$query = 'http://api.nytimes.com/svc/mostpopular/v2/mostviewed/all-sections/1.json?api-key=c56c29e61017b4bc452a26d1d20a7f95:13:72395557';
+	break;
+
 	default:
 		# code...
 	break;
