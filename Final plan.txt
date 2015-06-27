@@ -1,4 +1,4 @@
-1. phone notifications to pebble
-2. Pebble accessing online service
-3. Aws setup centralised server
-4. pebble display and spritz
+1. Text Processinag pebble - Pra
+2. Pebble accessing online service - Maj
+3. Aws setup centralised server - r
+4. topics selection api's- a
