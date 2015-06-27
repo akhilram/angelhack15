@@ -13,7 +13,8 @@ switch ($category) {
 	break;
 
 	default:
-		# code...
+	// top stories
+	$query = 'http://api.nytimes.com/svc/topstories/v1/home.json?api-key=31f908317e61cdf63f264bb88b75881c:14:72395557';
 	break;
 }
 $result = file_get_contents($query);
