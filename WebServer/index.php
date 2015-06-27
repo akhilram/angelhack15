@@ -1,21 +1,23 @@
 <?php
-
-$category = $_GET["category"];
+if (isset($_GET['category']))
+    $category = $_GET["category"];
+else
+    $category = "";
 switch ($category) {
-	case "topStories":
-	// top stories
-	$query = 'http://api.nytimes.com/svc/topstories/v1/home.json?api-key=31f908317e61cdf63f264bb88b75881c:14:72395557';
-	break;
-	
-	case "mostPopular":
-	// most popular
-	$query = 'http://api.nytimes.com/svc/mostpopular/v2/mostviewed/all-sections/1.json?api-key=c56c29e61017b4bc452a26d1d20a7f95:13:72395557';
-	break;
+    case "topStories":
+        // top stories
+        $query = 'http://api.nytimes.com/svc/topstories/v1/home.json?api-key=31f908317e61cdf63f264bb88b75881c:14:72395557';
+        break;
 
-	default:
-	// top stories
-	$query = 'http://api.nytimes.com/svc/topstories/v1/home.json?api-key=31f908317e61cdf63f264bb88b75881c:14:72395557';
-	break;
+    case "mostPopular":
+        // most popular
+        $query = 'http://api.nytimes.com/svc/mostpopular/v2/mostviewed/all-sections/1.json?api-key=c56c29e61017b4bc452a26d1d20a7f95:13:72395557';
+        break;
+
+    default:
+        // top stories
+        $query = 'http://api.nytimes.com/svc/topstories/v1/home.json?api-key=31f908317e61cdf63f264bb88b75881c:14:72395557';
+        break;
 }
 $result = file_get_contents($query);
 
@@ -24,7 +26,7 @@ $results = $json_result->results;
 
 $feeds = [];
 foreach ($results as $result) {
-	$feeds[] = $result->title;
+    $feeds[] = $result->title;
 }
 
 echo json_encode($feeds);
