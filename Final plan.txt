@@ -1,0 +1,4 @@
+1. phone notifications to pebble
+2. Pebble accessing online service
+3. Aws setup centralised server
+4. pebble display and spritz
