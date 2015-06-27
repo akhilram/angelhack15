@@ -1,6 +1,25 @@
-
 <?php
-$post_data = 'Think back to our talk earlier about Cross-Origin Resource Sharing (CORS). Remember how it introduces a security vulnerability? We\'re going to work to close that as tightly as possible here by tying an Origin to a unique API Key. This means that only known and allowed external hosts will be able to connect to our API service through a pairing of their domain name and a uniquely generated API Key. For the purposes of this example I\'m going to leave some of the code to verify the API Key abstracted out. Additionally our API will require a unique token in every request to verify the User.';
-$post_data = json_encode(array('item' => $post_data), JSON_FORCE_OBJECT);
-echo $post_data;
+
+$category = $_GET["category"];
+switch ($category) {
+	case 1:
+	$query = 'http://api.nytimes.com/svc/topstories/v1/home.json?api-key=31f908317e61cdf63f264bb88b75881c:14:72395557';
+	break;
+	
+	default:
+		# code...
+	break;
+}
+$result = file_get_contents($query);
+
+$json_result = json_decode($result);
+$results = $json_result->results;
+
+$feeds = [];
+foreach ($results as $result) {
+	$feeds[] = $result->title;
+}
+
+echo json_encode($feeds);
+
 ?>
