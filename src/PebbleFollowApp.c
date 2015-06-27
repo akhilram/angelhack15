@@ -6,18 +6,26 @@
  */
 
 #include <pebble.h>
-
+#include "TextBlob.h"
+  
 #define BOX_SIZE 20
 
 #define ANIM_DURATION 500
-#define ANIM_DELAY 300
-
+#define ANIM_DELAY 0
+#define FONT_SIZE 42 //please match this with font name below
+#define PEBBLE_FOLLOW_FONT_NAME FONT_KEY_BITHAM_42_BOLD
+#define WINDOW_HEIGHT 168
+#define WINDOW_WIDTH 144
+  
+#define APPROX_WORD_PER_LINE 8
+  
 static Window *s_main_window;
-static Layer *s_box_layer;
 static TextLayer *s_text_flow_layer;
-static PropertyAnimation *s_box_animation;
+static PropertyAnimation *s_text_animation;
+static GRect s_window_bounds = {{0, 0}, {WINDOW_WIDTH, WINDOW_HEIGHT}};
 
-static int s_current_stage = 0;
+
+static TextBlob *s_text_blob;
 
 // Function prototype 
 static void next_animation();
@@ -25,7 +33,7 @@ static void next_animation();
 static void anim_stopped_handler(Animation *animation, bool finished, void *context) {
 #ifdef PBL_PLATFORM_APLITE
   // Free the animation
-  property_animation_destroy(s_box_animation);
+  property_animation_destroy(s_text_animation);
 #endif
 
   // Schedule the next one, unless the app is exiting
@@ -35,74 +43,42 @@ static void anim_stopped_handler(Animation *animation, bool finished, void *cont
 }
 
 static void next_animation() {
-  // Determine start and finish positions
-  GRect start, finish;
-  switch (s_current_stage) {
-    case 0:
-      start = GRect(0, 0, BOX_SIZE, BOX_SIZE);
-      finish = GRect(144 - BOX_SIZE, 0, BOX_SIZE, BOX_SIZE);
-      break;
-    case 1:
-      start = GRect(144 - BOX_SIZE, 0, BOX_SIZE, BOX_SIZE);
-      finish = GRect(144 - BOX_SIZE, 168 - BOX_SIZE, BOX_SIZE, BOX_SIZE);
-      break;
-    case 2:
-      start = GRect(144 - BOX_SIZE, 168 - BOX_SIZE, BOX_SIZE, BOX_SIZE);
-      finish = GRect(0, 168 - BOX_SIZE, BOX_SIZE, BOX_SIZE);
-      break;
-    case 3:
-      start = GRect(0, 168 - BOX_SIZE, BOX_SIZE, BOX_SIZE);
-      finish = GRect(0, 0, BOX_SIZE, BOX_SIZE);
-      break;
-    default:
-      start = GRect(0, 0, BOX_SIZE, BOX_SIZE);
-      finish = GRect(0, 0, BOX_SIZE, BOX_SIZE);
-      break;
-  }
-
   // Schedule the next animation
-  s_box_animation = property_animation_create_layer_frame(s_box_layer, &start, &finish);
-  animation_set_duration((Animation*)s_box_animation, ANIM_DURATION);
-  animation_set_delay((Animation*)s_box_animation, ANIM_DELAY);
-  animation_set_curve((Animation*)s_box_animation, AnimationCurveEaseInOut);
-  animation_set_handlers((Animation*)s_box_animation, (AnimationHandlers) {
+  s_text_animation = property_animation_create_layer_frame( text_layer_get_layer(s_text_flow_layer), &s_window_bounds, &s_window_bounds);
+  animation_set_duration((Animation*)s_text_animation, ANIM_DURATION);
+  animation_set_delay((Animation*)s_text_animation, ANIM_DELAY);
+  animation_set_curve((Animation*)s_text_animation, AnimationCurveEaseInOut);
+  animation_set_handlers((Animation*)s_text_animation, (AnimationHandlers) {
     .stopped = anim_stopped_handler
   }, NULL);
-  animation_schedule((Animation*)s_box_animation);
-
-  if(s_current_stage==1)
-    text_layer_set_text(s_text_flow_layer, "Test2");
-  else if(s_current_stage==2)
-    text_layer_set_text(s_text_flow_layer, "Test3");
-  else
-    text_layer_set_text(s_text_flow_layer, "Test4");
   
-  // Increment stage and wrap
-  s_current_stage = (s_current_stage + 1) % 4;
-}
-
-static void update_proc(Layer *layer, GContext *ctx) {
-  graphics_context_set_fill_color(ctx, GColorWhite);
-  graphics_fill_rect(ctx, layer_get_bounds(layer), 4, GCornersAll);
+  const char* next_word = pebble_follow_text_blob_get_next_word(s_text_blob);
+  
+  if(next_word && (strcmp(next_word,"")))
+  {
+    text_layer_set_text(s_text_flow_layer, next_word);
+    int approxTextHeight = FONT_SIZE * (s_text_blob->length % APPROX_WORD_PER_LINE);
+    
+    GRect new_bounds = GRect(0, (WINDOW_HEIGHT - approxTextHeight)/2, WINDOW_WIDTH, WINDOW_HEIGHT);
+    layer_set_bounds(text_layer_get_layer(s_text_flow_layer), new_bounds);
+    animation_schedule((Animation*)s_text_animation);
+  }  
 }
 
 static void main_window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
-  s_text_flow_layer = text_layer_create(GRect(0, 0, 144, 154));
-  text_layer_set_font(s_text_flow_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
+  s_text_flow_layer = text_layer_create(s_window_bounds);
+  text_layer_set_font(s_text_flow_layer, fonts_get_system_font(PEBBLE_FOLLOW_FONT_NAME));
 	text_layer_set_text_alignment(s_text_flow_layer, GTextAlignmentCenter);
-  text_layer_set_text(s_text_flow_layer, "Test!!");
+  text_layer_set_text(s_text_flow_layer, "");
   
   layer_add_child(window_layer, text_layer_get_layer(s_text_flow_layer));
-  // Create Layer
-  s_box_layer = layer_create(GRect(0, 0, BOX_SIZE, BOX_SIZE));
-  layer_set_update_proc(s_box_layer, update_proc);
-  layer_add_child(window_layer, s_box_layer);
 }
 
 static void main_window_unload(Window *window) {
   // Destroy Layer
-  layer_destroy(s_box_layer);
+  //layer_destroy(s_text_flow_layer); //TODO: Should I?
+  text_layer_destroy(s_text_flow_layer);
 }
 
 static void init(void) {
@@ -117,6 +93,8 @@ static void init(void) {
   });
   window_stack_push(s_main_window, true);
 
+  pebble_follow_text_blob_create("Terrorist Attacks in France, Tunisia and Kuwait Kill Dozens", &s_text_blob);
+  
   // Start animation loop
   next_animation();
 }
@@ -124,7 +102,8 @@ static void init(void) {
 static void deinit(void) {
   // Stop any animation in progress
   animation_unschedule_all();
-
+  pebble_follow_text_blob_destroy(s_text_blob);
+  
   // Destroy main Window
   window_destroy(s_main_window);
 }
@@ -134,3 +113,4 @@ int main(void) {
   app_event_loop();
   deinit();
 }
+
