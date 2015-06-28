@@ -13,6 +13,7 @@
 #define ANIM_DURATION_STEP 50 //in ms
 #define ANIM_DURATION_MAX_SCALE 40 //max delay 2 second
 #define ANIM_DURATION_DELIMITER 1000 //delay 1 second between blobs
+#define ANIM_WORD_DELAY 15  //10ms additional delay per letter
   
 #define ANIM_DELAY 0
 #define FONT_SIZE 35 //please match this with font name below
@@ -30,7 +31,7 @@ static Window *s_main_window;
 static TextLayer *s_text_flow_layer;
 static PropertyAnimation *s_text_animation;
 static GRect s_window_bounds = {{0, 0}, {WINDOW_WIDTH, WINDOW_HEIGHT}};
-static int s_anim_duration_scale = 10;  //scale ANIM_DURATION_STEP
+static int s_anim_duration_scale = 3;  //scale ANIM_DURATION_STEP
 
 static TextBlob *s_text_blob;
 static TextBlobNode* s_text_blob_list_head = NULL;
@@ -198,6 +199,7 @@ static void anim_stopped_handler(Animation *animation, bool finished, void *cont
 int calculateAnimDuration(const char* word)
 {
   int delay = s_anim_duration_scale * ANIM_DURATION_STEP;
+  delay += strlen(word) * ANIM_WORD_DELAY;
   return delay;
 }
 
