@@ -13,25 +13,28 @@
 #define ANIM_DURATION_STEP 50 //in ms
 #define ANIM_DURATION_MAX_SCALE 40 //max delay 2 second
 #define ANIM_DURATION_DELIMITER 1000 //delay 1 second between blobs
-#define ANIM_WORD_DELAY 15  //10ms additional delay per letter
   
 #define ANIM_DELAY 0
 #define FONT_SIZE 35 //please match this with font name below
 #define PEBBLE_FOLLOW_FONT_NAME FONT_KEY_BITHAM_30_BLACK
+#define PEBBLE_HEADER_FONT FONT_KEY_GOTHIC_18
 #define WINDOW_HEIGHT 168
 #define WINDOW_WIDTH 144
   
 #define APPROX_WORD_PER_LINE 8
 #define KEY_COUNT 0
 
+static const char * const categories[] = { "Top Stories", "Most Popular", "Finance", "Twitter" };
 static Window    *s_menu_window;
 static MenuLayer *s_menu_layer;
    
 static Window *s_main_window;
 static TextLayer *s_text_flow_layer;
+static TextLayer *s_text_header_layer;
 static PropertyAnimation *s_text_animation;
-static GRect s_window_bounds = {{0, 0}, {WINDOW_WIDTH, WINDOW_HEIGHT}};
-static int s_anim_duration_scale = 3;  //scale ANIM_DURATION_STEP
+static GRect s_header_bounds = {{0,0}, {WINDOW_WIDTH, 20}};
+static GRect s_window_bounds = {{0,0}, {WINDOW_WIDTH, WINDOW_HEIGHT-20}};
+static int s_anim_duration_scale = 10;  //scale ANIM_DURATION_STEP
 
 static TextBlob *s_text_blob;
 static TextBlobNode* s_text_blob_list_head = NULL;
@@ -112,25 +115,25 @@ static void pebble_follow_menu_draw_row_callback(GContext* ctx, const Layer *cel
 
 static void pebble_follow_menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
   // Use the row to specify which item will receive the select action
-  char* category = ""; 
-  switch (cell_index->row) {
-    case 0:
-      category = "topStories";
-      break;
-    case 1: 
-    category = "mostPopular";
-      break;
-    case 2: 
-    category = "finance";
-      break;
-    case 3: 
-    category = "twitter";
-      break;
-  }
-  set_category();
+//   char* category = ""; 
+//   switch (cell_index->row) {
+//     case 0:
+//       category = "topStories";
+//       break;
+//     case 1: 
+//     category = "mostPopular";
+//       break;
+//     case 2: 
+//     category = "finance";
+//       break;
+//     case 3: 
+//     category = "twitter";
+//       break;
+//   }
+  set_category(cell_index->row);
   reset_blobs();
   window_stack_pop(true);
-  APP_LOG(APP_LOG_LEVEL_INFO, category);
+//   APP_LOG(APP_LOG_LEVEL_INFO, category);
 }
   
 static void pebble_follow_menu_window_load(Window *window) {
@@ -199,7 +202,6 @@ static void anim_stopped_handler(Animation *animation, bool finished, void *cont
 int calculateAnimDuration(const char* word)
 {
   int delay = s_anim_duration_scale * ANIM_DURATION_STEP;
-  delay += strlen(word) * ANIM_WORD_DELAY;
   return delay;
 }
 
@@ -270,11 +272,18 @@ static void setup_sample_blobs()
 
 static void main_window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
+  
+  s_text_header_layer = text_layer_create(s_header_bounds);
+  text_layer_set_font(s_text_header_layer, fonts_get_system_font(PEBBLE_HEADER_FONT));
+  text_layer_set_text_alignment(s_text_header_layer, GTextAlignmentCenter);
+  text_layer_set_text(s_text_header_layer, categories[1]);
+  
   s_text_flow_layer = text_layer_create(s_window_bounds);
   text_layer_set_font(s_text_flow_layer, fonts_get_system_font(PEBBLE_FOLLOW_FONT_NAME));
-	text_layer_set_text_alignment(s_text_flow_layer, GTextAlignmentCenter);
+  text_layer_set_text_alignment(s_text_flow_layer, GTextAlignmentCenter);
   text_layer_set_text(s_text_flow_layer, "");
   
+  layer_add_child(window_layer, text_layer_get_layer(s_text_header_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_text_flow_layer));
   
   setup_sample_blobs();
@@ -302,7 +311,8 @@ void destroy_text_blobs()
   s_list_size = 0;
 }
 
-static void set_category() {
+static void set_category(int category_index) {
+  text_layer_set_text(s_text_header_layer, categories[category_index]);
   APP_LOG(APP_LOG_LEVEL_INFO, "Setting category");
 }
 
