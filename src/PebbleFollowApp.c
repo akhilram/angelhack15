@@ -32,7 +32,16 @@ static TextBlob *s_text_blob;
 static TextBlob** s_text_blobs;
 static int s_text_blobs_size = 0;
 static int s_text_blobs_pointer = 0;
-static bool isTransitioning = false;
+
+typedef enum {
+  TRANSITIONING,
+  PAUSED,
+  RUNNING,
+  COMPLETED,
+  STARTING,
+} AppState;
+
+static AppState s_app_state = STARTING;
 
 // Function prototype 
 static void next_animation();
@@ -62,12 +71,18 @@ static void next_animation() {
   animation_set_handlers((Animation*)s_text_animation, (AnimationHandlers) {
     .stopped = anim_stopped_handler
   }, NULL);
-    
   
-  if(isTransitioning)
+  if(s_app_state == PAUSED)
+  {
+    animation_set_duration((Animation*)s_text_animation, ANIM_DURATION_DELIMITER);  
+    animation_schedule((Animation*)s_text_animation);    
+    return;
+  }
+  
+  if(s_app_state == TRANSITIONING)
   {
     s_text_blobs_pointer++;
-    isTransitioning = false;
+    s_app_state = RUNNING;
   }
   
   if (s_text_blobs_pointer < s_text_blobs_size)
@@ -80,16 +95,20 @@ static void next_animation() {
     } else {
       animation_set_duration((Animation*)s_text_animation, ANIM_DURATION_DELIMITER);
       text_layer_set_text(s_text_flow_layer, "|");
-      isTransitioning = true;
-
+      s_app_state = TRANSITIONING;
     }
     
     int approxTextHeight = FONT_SIZE * (s_text_blob->length % APPROX_WORD_PER_LINE);
       
     GRect new_bounds = GRect(0, (WINDOW_HEIGHT - approxTextHeight)/2, WINDOW_WIDTH, WINDOW_HEIGHT);
     layer_set_bounds(text_layer_get_layer(s_text_flow_layer), new_bounds);
-    animation_schedule((Animation*)s_text_animation);
+    
+  } else {
+    s_app_state = COMPLETED;
+    reset_blobs();
+    s_app_state = RUNNING;
   }
+  animation_schedule((Animation*)s_text_animation);
 }
 
 static void main_window_load(Window *window) {
@@ -124,15 +143,27 @@ void destroy_text_blobs()
 
 static void setup_sample_blobs()
 {
-  int size = 2;
+  int size = 5;
   TextBlob **blobs;
   
   blobs = (TextBlob**) malloc(size * sizeof(TextBlob*));  
   
   pebble_follow_text_blob_create("Terrorist Attacks in France, Tunisia and Kuwait Kill Dozens", &blobs[0]);
   pebble_follow_text_blob_create("Protester Removes Confederate Flag at South Carolina Capitol", &blobs[1]);
+  pebble_follow_text_blob_create("The Upshot: Where Same-Sex Couples Live", &blobs[2]);
+  pebble_follow_text_blob_create("Jubilation, and Some Stalling, as Ruling Is Absorbed", &blobs[3]);
+  pebble_follow_text_blob_create("Gunman Pursued Tourists in Slaughter at a Tunisian Hotel", &blobs[4]);
+  
   
   pebble_follow_add_text_blobs(blobs, size);
+}
+
+static void reset_blobs()
+{
+  for (int i=0; i<s_text_blobs_size; i++)
+    pebble_follow_text_blob_reset(s_text_blobs[i]);
+  
+  s_text_blobs_pointer = 0;
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -141,6 +172,10 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
+  if (s_app_state == PAUSED)
+    s_app_state = RUNNING;
+  else
+    s_app_state = PAUSED;
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -171,6 +206,7 @@ static void init(void) {
   setup_sample_blobs();
   pebble_follow_text_blob_create("Terrorist Attacks in France, Tunisia and Kuwait Kill Dozens", &s_text_blob);
   
+  s_app_state = RUNNING;
   // Start animation loop
   next_animation();
 }

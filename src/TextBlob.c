@@ -64,4 +64,7 @@ void pebble_follow_text_blob_destroy(TextBlob *blob)
   }
 }
 
-
+void pebble_follow_text_blob_reset(TextBlob *blob)
+{
+  blob->current_pointer = 0;  
+}
