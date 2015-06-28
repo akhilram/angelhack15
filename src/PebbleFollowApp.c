@@ -251,31 +251,6 @@ static void next_animation() {
   animation_schedule((Animation*)s_text_animation);
 }
 
-static void main_window_load(Window *window) {
-  Layer *window_layer = window_get_root_layer(window);
-  s_text_flow_layer = text_layer_create(s_window_bounds);
-  text_layer_set_font(s_text_flow_layer, fonts_get_system_font(PEBBLE_FOLLOW_FONT_NAME));
-	text_layer_set_text_alignment(s_text_flow_layer, GTextAlignmentCenter);
-  text_layer_set_text(s_text_flow_layer, "");
-  
-  layer_add_child(window_layer, text_layer_get_layer(s_text_flow_layer));
-}
-
-static void main_window_unload(Window *window) {
-  // Destroy Layer
-  //layer_destroy(s_text_flow_layer); //TODO: Should I?
-  text_layer_destroy(s_text_flow_layer);
-}
-
-void destroy_text_blobs()
-{
-  pebble_follow_textbloblist_erase(s_text_blob_list_head);
-  s_text_blob_list_head = NULL;
-  s_text_blob_list_tail = NULL;
-  s_text_blob_list_pointer = NULL;
-  s_list_size = 0;
-}
-
 static void setup_sample_blobs()
 {
 //  pebble_follow_add_text_blob("Terrorist Attacks in France, Tunisia and Kuwait Kill Dozens");  
@@ -285,6 +260,40 @@ static void setup_sample_blobs()
 //   pebble_follow_add_text_blob("Gunman Pursued Tourists in Slaughter at a Tunisian Hotel");  
   
   pebble_follow_text_blob_create("Terrorist Attacks in France, Tunisia and Kuwait Kill Dozens", &s_text_blob);
+}
+
+static void main_window_load(Window *window) {
+  Layer *window_layer = window_get_root_layer(window);
+  s_text_flow_layer = text_layer_create(s_window_bounds);
+  text_layer_set_font(s_text_flow_layer, fonts_get_system_font(PEBBLE_FOLLOW_FONT_NAME));
+	text_layer_set_text_alignment(s_text_flow_layer, GTextAlignmentCenter);
+  text_layer_set_text(s_text_flow_layer, "");
+  
+  layer_add_child(window_layer, text_layer_get_layer(s_text_flow_layer));
+  
+  setup_sample_blobs();
+  s_app_state = RUNNING;
+  // Start animation loop
+  next_animation();
+}
+
+static void main_window_unload(Window *window) {
+  // Destroy Layer
+  //layer_destroy(s_text_flow_layer); //TODO: Should I?
+  text_layer_destroy(s_text_flow_layer);
+}
+
+static void main_window_appear(Window *window) {
+  s_app_state = RUNNING;
+}
+
+void destroy_text_blobs()
+{
+  pebble_follow_textbloblist_erase(s_text_blob_list_head);
+  s_text_blob_list_head = NULL;
+  s_text_blob_list_tail = NULL;
+  s_text_blob_list_pointer = NULL;
+  s_list_size = 0;
 }
 
 static void reset_blobs()
@@ -334,17 +343,12 @@ static void init(void) {
   window_set_window_handlers(s_main_window, (WindowHandlers) {
     .load = main_window_load,
     .unload = main_window_unload,
+    .appear = main_window_appear
   });
   window_set_click_config_provider(s_main_window, click_config_provider);
   window_stack_push(s_main_window, true);
 
-  setup_sample_blobs();
-  
-  s_app_state = RUNNING;
-  // Start animation loop
-  next_animation();
-  
-    // Setup AppSync
+  // Setup AppSync
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
 
   // Setup initial values
