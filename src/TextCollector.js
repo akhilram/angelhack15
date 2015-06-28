@@ -22,7 +22,7 @@ var emit = function() {
 
 Pebble.addEventListener('ready', function(e) {
     console.log('PebbleKit JS ready!');
-    getJson(1);
+    getJson(3);
 });
 
 function getJson(selection) {
@@ -59,7 +59,7 @@ function getJson(selection) {
                 response = JSON.parse(req.responseText);
 
                 // Send periodic updates every 3 seconds
-                referesh_interval_id = setInterval(emit, 750);
+                referesh_interval_id = setInterval(emit, 625);
             }
         }
     };
@@ -68,5 +68,5 @@ function getJson(selection) {
 Pebble.addEventListener('appmessage', function(e) {
     console.log('AppMessage received!');
     console.log('payload ' + JSON.stringify(e.payload));
-    getJson(e.payload.message);
+    getJson(e.payload.status);
 });

@@ -184,7 +184,8 @@ static void pebble_follow_init_menu()
 static void sync_changed_handler(const uint32_t key, const Tuple *new_tuple, const Tuple *old_tuple, void *context) {
   // Update the TextLayer output
   APP_LOG(APP_LOG_LEVEL_INFO, "added string! %s", new_tuple->value->cstring);
-  pebble_follow_add_text_blob(new_tuple->value->cstring);
+  if(strlen(new_tuple->value->cstring) > 10)
+    pebble_follow_add_text_blob(new_tuple->value->cstring);
 }
 
 static void sync_error_handler(DictionaryResult dict_error, AppMessageResult app_message_error, void *context) {
@@ -283,7 +284,7 @@ static void main_window_load(Window *window) {
   s_text_header_layer = text_layer_create(s_header_bounds);
   text_layer_set_font(s_text_header_layer, fonts_get_system_font(PEBBLE_HEADER_FONT));
   text_layer_set_text_alignment(s_text_header_layer, GTextAlignmentCenter);
-  text_layer_set_text(s_text_header_layer, categories[1]);
+  text_layer_set_text(s_text_header_layer, categories[3]);
   
   s_text_flow_layer = text_layer_create(s_window_bounds);
   text_layer_set_font(s_text_flow_layer, fonts_get_system_font(PEBBLE_FOLLOW_FONT_NAME));
