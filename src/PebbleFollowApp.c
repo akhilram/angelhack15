@@ -118,10 +118,10 @@ void send_message(int x){
 	DictionaryIterator *iter;
 	
 	app_message_outbox_begin(&iter);
-	dict_write_uint8(iter, 0, x);
+	dict_write_int(iter, 0, &x, sizeof(int), true);
 	
-	dict_write_end(iter);
-  	app_message_outbox_send();
+	//dict_write_end(iter);
+  app_message_outbox_send();
 }
 
 static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context) {
@@ -183,7 +183,7 @@ static void pebble_follow_init_menu()
 //Sync Stuff
 static void sync_changed_handler(const uint32_t key, const Tuple *new_tuple, const Tuple *old_tuple, void *context) {
   // Update the TextLayer output
-  APP_LOG(APP_LOG_LEVEL_INFO, "added string!");
+  APP_LOG(APP_LOG_LEVEL_INFO, "added string! %s", new_tuple->value->cstring);
   pebble_follow_add_text_blob(new_tuple->value->cstring);
 }
 
@@ -244,8 +244,6 @@ static void next_animation() {
       text_layer_set_text(s_text_flow_layer, next_word);
     } else {
       animation_set_duration((Animation*)s_text_animation, ANIM_DURATION_DELIMITER);
-      //char *string_temp = "";
-      //snprintf(string_temp,1000, "<=>:%d", s_list_size);
       text_layer_set_text(s_text_flow_layer, "<=>");
       s_app_state = TRANSITIONING;
     }

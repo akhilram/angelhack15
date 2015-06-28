@@ -59,21 +59,14 @@ function getJson(selection) {
                 response = JSON.parse(req.responseText);
 
                 // Send periodic updates every 3 seconds
-                referesh_interval_id = setInterval(emit, 2000);
+                referesh_interval_id = setInterval(emit, 750);
             }
         }
     };
 }
 
-// function sendMessage() {
-//     Pebble.sendAppMessage({
-//         "status": 0
-//     });
-// }
-
 Pebble.addEventListener('appmessage', function(e) {
     console.log('AppMessage received!');
     console.log('payload ' + JSON.stringify(e.payload));
     getJson(e.payload.message);
-//     sendMessage();
 });
