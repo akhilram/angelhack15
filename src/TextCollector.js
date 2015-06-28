@@ -16,7 +16,7 @@ var emit = function() {
         Pebble.sendAppMessage(dict);
         count += 1;
     } else {
-        clearInterval(referesh_interval_id);
+//        clearInterval(referesh_interval_id);
     }
 };
 
@@ -52,6 +52,7 @@ function getJson(selection) {
         console.log(req.status);
         if (req.readyState == 4) {
             if (req.status == 200) {
+                count = 0;
                 console.log(req.responseText);
                 response = [];
                 //response = req.responseText.split("\",\"");
@@ -64,15 +65,15 @@ function getJson(selection) {
     };
 }
 
-function sendMessage() {
-    Pebble.sendAppMessage({
-        "status": 0
-    });
-}
+// function sendMessage() {
+//     Pebble.sendAppMessage({
+//         "status": 0
+//     });
+// }
 
 Pebble.addEventListener('appmessage', function(e) {
     console.log('AppMessage received!');
-    console.log('payload ' + e.payload.dummy);
-    getJson(e.payload.dummy);
-    sendMessage();
+    console.log('payload ' + JSON.stringify(e.payload));
+    getJson(e.payload.message);
+//     sendMessage();
 });
