@@ -154,6 +154,15 @@ static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reas
   APP_LOG(APP_LOG_LEVEL_ERROR, "ERROR");
 }
 
+void destroy_text_blobs()
+{
+  pebble_follow_textbloblist_erase(s_text_blob_list_head);
+  s_text_blob_list_head = NULL;
+  s_text_blob_list_tail = NULL;
+  s_text_blob_list_pointer = NULL;
+  s_list_size = 0;
+}
+
 static void pebble_follow_menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
 
 	app_message_register_inbox_received(in_received_handler); 
@@ -163,7 +172,7 @@ static void pebble_follow_menu_select_callback(MenuLayer *menu_layer, MenuIndex 
 	app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
 
   set_category(cell_index->row);
-  reset_blobs();
+  destroy_text_blobs();
   window_stack_pop(true);
 //   APP_LOG(APP_LOG_LEVEL_INFO, category);
 }
@@ -335,17 +344,9 @@ static void main_window_appear(Window *window) {
   s_app_state = RUNNING;
 }
 
-void destroy_text_blobs()
-{
-  pebble_follow_textbloblist_erase(s_text_blob_list_head);
-  s_text_blob_list_head = NULL;
-  s_text_blob_list_tail = NULL;
-  s_text_blob_list_pointer = NULL;
-  s_list_size = 0;
-}
-
 static void set_category(int category_index) {
   text_layer_set_text(s_text_header_layer, categories[category_index]);
+  send_message(category_index);
   APP_LOG(APP_LOG_LEVEL_INFO, "Setting category");
 }
 
