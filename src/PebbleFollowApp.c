@@ -15,8 +15,8 @@
 #define ANIM_DURATION_DELIMITER 1000 //delay 1 second between blobs
   
 #define ANIM_DELAY 0
-#define FONT_SIZE 42 //please match this with font name below
-#define PEBBLE_FOLLOW_FONT_NAME FONT_KEY_BITHAM_42_BOLD
+#define FONT_SIZE 35 //please match this with font name below
+#define PEBBLE_FOLLOW_FONT_NAME FONT_KEY_BITHAM_30_BLACK
 #define WINDOW_HEIGHT 168
 #define WINDOW_WIDTH 144
   
