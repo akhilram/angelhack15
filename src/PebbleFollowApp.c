@@ -114,23 +114,54 @@ static void pebble_follow_menu_draw_row_callback(GContext* ctx, const Layer *cel
   }
 }
 
+enum {
+	STATUS_KEY = 0,	
+	MESSAGE_KEY = 1
+};
+
+// Write message to buffer & send
+void send_message(int x){
+	DictionaryIterator *iter;
+	
+	app_message_outbox_begin(&iter);
+	dict_write_uint8(iter, STATUS_KEY, x);
+	
+	dict_write_end(iter);
+  	app_message_outbox_send();
+}
+
+// Called when a message is received from PebbleKitJS
+static void in_received_handler(DictionaryIterator *received, void *context) {
+	Tuple *tuple;
+	
+	tuple = dict_find(received, STATUS_KEY);
+	if(tuple) {
+		APP_LOG(APP_LOG_LEVEL_ERROR, "Received Status: %d", (int)tuple->value->uint32); 
+	}
+	
+	tuple = dict_find(received, MESSAGE_KEY);
+	if(tuple) {
+		APP_LOG(APP_LOG_LEVEL_ERROR, "Received Message: %s", tuple->value->cstring);
+	}}
+
+// Called when an incoming message from PebbleKitJS is dropped
+static void in_dropped_handler(AppMessageResult reason, void *context) {	
+  APP_LOG(APP_LOG_LEVEL_ERROR, "DROPPED");
+}
+
+// Called when PebbleKitJS does not acknowledge receipt of a message
+static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_ERROR, "ERROR");
+}
+
 static void pebble_follow_menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
-  // Use the row to specify which item will receive the select action
-//   char* category = ""; 
-//   switch (cell_index->row) {
-//     case 0:
-//       category = "topStories";
-//       break;
-//     case 1: 
-//     category = "mostPopular";
-//       break;
-//     case 2: 
-//     category = "finance";
-//       break;
-//     case 3: 
-//     category = "twitter";
-//       break;
-//   }
+
+	app_message_register_inbox_received(in_received_handler); 
+	app_message_register_inbox_dropped(in_dropped_handler); 
+	app_message_register_outbox_failed(out_failed_handler);
+		
+	app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+
   set_category(cell_index->row);
   reset_blobs();
   window_stack_pop(true);
