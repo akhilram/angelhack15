@@ -34,7 +34,7 @@ static TextLayer *s_text_flow_layer;
 static TextLayer *s_text_header_layer;
 static PropertyAnimation *s_text_animation;
 static GRect s_header_bounds = {{0,0}, {WINDOW_WIDTH, 30}};
-static GRect s_window_bounds = {{0,0}, {WINDOW_WIDTH, WINDOW_HEIGHT-30}};
+static GRect s_window_bounds = {{0,0}, {WINDOW_WIDTH, WINDOW_HEIGHT}};
 static int s_anim_duration_scale = 4;  //scale ANIM_DURATION_STEP
 
 static TextBlob *s_text_blob;
@@ -245,7 +245,7 @@ static void next_animation() {
       text_layer_set_text(s_text_flow_layer, next_word);
     } else {
       animation_set_duration((Animation*)s_text_animation, ANIM_DURATION_DELIMITER);
-      text_layer_set_text(s_text_flow_layer, "<=>");
+      text_layer_set_text(s_text_flow_layer, "<--->");
       s_app_state = TRANSITIONING;
     }
 
