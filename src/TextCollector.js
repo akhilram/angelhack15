@@ -21,13 +21,6 @@ var emit = function() {
 
 Pebble.addEventListener('ready', function(e) {
   console.log('PebbleKit JS ready!');
-<<<<<<< HEAD
-  var req = new XMLHttpRequest();
-  var baseurl = "http://sudotestapp-env.elasticbeanstalk.com/index.php?category=twitter";
-  
-    req.open('GET', baseurl, true);
-    console.log(baseurl);
-=======
   getJson(1);
 });
 
@@ -52,7 +45,6 @@ function getJson(selection){
   
     req.open('GET', baseurl.concat(topic), true);
     console.log(baseurl.concat(topic));
->>>>>>> Textcollector
     
     req.send();
     req.onload = function(e) {
@@ -69,14 +61,6 @@ function getJson(selection){
         }
       }
     };
-<<<<<<< HEAD
-
-  
-});
-
-Pebble.addEventListener('appmessage', function(e) {
-  console.log('AppMessage received!');
-=======
 }
 
 function sendMessage() {
@@ -88,6 +72,5 @@ Pebble.addEventListener('appmessage', function(e) {
   console.log('payload '+ e.payload.dummy);
   getJson(e.payload.dummy);
   sendMessage();
->>>>>>> Textcollector
 });
 
