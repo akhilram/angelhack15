@@ -44,21 +44,18 @@ typedef enum {
 
 static AppState s_app_state = STARTING;
 
-// static AppSync s_sync;
-// static uint8_t s_sync_buffer[256];
+static AppSync s_sync;
+static uint8_t s_sync_buffer[2048];
 
-// static void sync_changed_handler(const uint32_t key, const Tuple *new_tuple, const Tuple *old_tuple, void *context) {
-//   // Update the TextLayer output
-//   //static char s_count_buffer[32];
-//   //snprintf(s_count_buffer, sizeof(s_count_buffer), "Count: %d", (int)new_tuple->value->int32);
-//     text_layer_set_text(s_output_layer, new_tuple->value->cstring);
-   
-// }
+static void sync_changed_handler(const uint32_t key, const Tuple *new_tuple, const Tuple *old_tuple, void *context) {
+  // Update the TextLayer output
+  pebble_follow_add_text_blob(new_tuple->value->cstring);
+}
 
-// static void sync_error_handler(DictionaryResult dict_error, AppMessageResult app_message_error, void *context) {
-//   // An error occured!
-//   APP_LOG(APP_LOG_LEVEL_ERROR, "sync error! %d" , app_message_error);
-// }
+static void sync_error_handler(DictionaryResult dict_error, AppMessageResult app_message_error, void *context) {
+  // An error occured!
+  APP_LOG(APP_LOG_LEVEL_ERROR, "sync error! %d" , app_message_error);
+}
 
 // Function prototype 
 static void next_animation();
@@ -159,10 +156,10 @@ void destroy_text_blobs()
 static void setup_sample_blobs()
 {
   pebble_follow_add_text_blob("Terrorist Attacks in France, Tunisia and Kuwait Kill Dozens");  
-  pebble_follow_add_text_blob("Protester Removes Confederate Flag at South Carolina Capitol");
-  pebble_follow_add_text_blob("The Upshot: Where Same-Sex Couples Live");
-  pebble_follow_add_text_blob("Jubilation, and Some Stalling, as Ruling Is Absorbed");
-  pebble_follow_add_text_blob("Gunman Pursued Tourists in Slaughter at a Tunisian Hotel");  
+//   pebble_follow_add_text_blob("Protester Removes Confederate Flag at South Carolina Capitol");
+//   pebble_follow_add_text_blob("The Upshot: Where Same-Sex Couples Live");
+//   pebble_follow_add_text_blob("Jubilation, and Some Stalling, as Ruling Is Absorbed");
+//   pebble_follow_add_text_blob("Gunman Pursued Tourists in Slaughter at a Tunisian Hotel");  
   
   pebble_follow_text_blob_create("Terrorist Attacks in France, Tunisia and Kuwait Kill Dozens", &s_text_blob);
 }
@@ -221,16 +218,16 @@ static void init(void) {
   // Start animation loop
   next_animation();
   
-//     // Setup AppSync
-//   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+    // Setup AppSync
+  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
 
-//   // Setup initial values
-//   Tuplet initial_values[] = {
-//     TupletCString(KEY_COUNT, ""),
-//   };
+  // Setup initial values
+  Tuplet initial_values[] = {
+    TupletCString(KEY_COUNT, ""),
+  };
 
-//   // Begin using AppSync
-//   app_sync_init(&s_sync, s_sync_buffer, sizeof(s_sync_buffer), initial_values, ARRAY_LENGTH(initial_values), sync_changed_handler, sync_error_handler, NULL);
+  // Begin using AppSync
+  app_sync_init(&s_sync, s_sync_buffer, sizeof(s_sync_buffer), initial_values, ARRAY_LENGTH(initial_values), sync_changed_handler, sync_error_handler, NULL);
 
 }
 
@@ -242,12 +239,15 @@ static void deinit(void) {
   // Destroy main Window
   window_destroy(s_main_window);
   
-//   app_sync_deinit(&s_sync);
+  app_sync_deinit(&s_sync);
 }
 
 
 void pebble_follow_add_text_blob(const char* blobText)
 {
+  if(!blobText || !strcmp(blobText,""))
+    return;
+  
   TextBlob *blob;    
   pebble_follow_text_blob_create(blobText, &blob);
   
