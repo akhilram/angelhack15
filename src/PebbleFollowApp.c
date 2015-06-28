@@ -10,14 +10,15 @@
   
 #define TEXT_BLOB_LIST_MAX_SIZE 20
 
-#define ANIM_DURATION_STEP 50 //in ms
+#define ANIM_DURATION_STEP 40 //in ms
 #define ANIM_DURATION_MAX_SCALE 40 //max delay 2 second
 #define ANIM_DURATION_DELIMITER 1000 //delay 1 second between blobs
+#define ANIM_WORD_DELAY 15  //10ms additional delay per letter
   
 #define ANIM_DELAY 0
 #define FONT_SIZE 35 //please match this with font name below
 #define PEBBLE_FOLLOW_FONT_NAME FONT_KEY_BITHAM_30_BLACK
-#define PEBBLE_HEADER_FONT FONT_KEY_GOTHIC_18
+#define PEBBLE_HEADER_FONT FONT_KEY_GOTHIC_24_BOLD
 #define WINDOW_HEIGHT 168
 #define WINDOW_WIDTH 144
   
@@ -32,9 +33,9 @@ static Window *s_main_window;
 static TextLayer *s_text_flow_layer;
 static TextLayer *s_text_header_layer;
 static PropertyAnimation *s_text_animation;
-static GRect s_header_bounds = {{0,0}, {WINDOW_WIDTH, 20}};
-static GRect s_window_bounds = {{0,0}, {WINDOW_WIDTH, WINDOW_HEIGHT-20}};
-static int s_anim_duration_scale = 10;  //scale ANIM_DURATION_STEP
+static GRect s_header_bounds = {{0,0}, {WINDOW_WIDTH, 30}};
+static GRect s_window_bounds = {{0,0}, {WINDOW_WIDTH, WINDOW_HEIGHT-30}};
+static int s_anim_duration_scale = 4;  //scale ANIM_DURATION_STEP
 
 static TextBlob *s_text_blob;
 static TextBlobNode* s_text_blob_list_head = NULL;
@@ -202,6 +203,7 @@ static void anim_stopped_handler(Animation *animation, bool finished, void *cont
 int calculateAnimDuration(const char* word)
 {
   int delay = s_anim_duration_scale * ANIM_DURATION_STEP;
+  delay += strlen(word) * ANIM_WORD_DELAY;
   return delay;
 }
 
