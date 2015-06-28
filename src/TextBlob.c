@@ -4,7 +4,7 @@ void pebble_follow_text_blob_create(const char *string, TextBlob **blob)
 {
   *blob = (TextBlob*)malloc(sizeof(TextBlob));
   (*blob)->length = strlen(string);
-  app_log(1,"TextBlob", 6, "String: %s", string);
+  //app_log(1,"TextBlob", 6, "String: %s", string);
   
   (*blob)->text_blob = (char *)malloc((*blob)->length);
   memset((*blob)->text_blob, '\0', (*blob)->length);

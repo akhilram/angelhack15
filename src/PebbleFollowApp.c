@@ -7,8 +7,8 @@
 
 #include <pebble.h>
 #include "PebbleFollowApp.h"
-  
-#define BOX_SIZE 20
+
+#define TEXT_BLOB_LIST_MAX_SIZE 20
 
 #define ANIM_DURATION_STEP 50 //in ms
 #define ANIM_DURATION_MAX_SCALE 40 //max delay 2 second
@@ -22,7 +22,7 @@
   
 #define APPROX_WORD_PER_LINE 8
 #define KEY_COUNT 0
-  
+
 static Window *s_main_window;
 static TextLayer *s_text_flow_layer;
 static PropertyAnimation *s_text_animation;
@@ -33,6 +33,7 @@ static TextBlob *s_text_blob;
 static TextBlobNode* s_text_blob_list_head = NULL;
 static TextBlobNode* s_text_blob_list_tail = NULL;
 static TextBlobNode* s_text_blob_list_pointer = NULL;
+static int s_list_size = 0;
 
 typedef enum {
   TRANSITIONING,
@@ -108,7 +109,9 @@ static void next_animation() {
       text_layer_set_text(s_text_flow_layer, next_word);
     } else {
       animation_set_duration((Animation*)s_text_animation, ANIM_DURATION_DELIMITER);
-      text_layer_set_text(s_text_flow_layer, "<=>");
+      char *string_temp = "";
+      snprintf(string_temp,1000, "<=>:%d", s_list_size);
+      text_layer_set_text(s_text_flow_layer, string_temp);
       s_app_state = TRANSITIONING;
     }
 
@@ -151,11 +154,12 @@ void destroy_text_blobs()
   s_text_blob_list_head = NULL;
   s_text_blob_list_tail = NULL;
   s_text_blob_list_pointer = NULL;
+  s_list_size = 0;
 }
 
 static void setup_sample_blobs()
 {
-  pebble_follow_add_text_blob("Terrorist Attacks in France, Tunisia and Kuwait Kill Dozens");  
+//  pebble_follow_add_text_blob("Terrorist Attacks in France, Tunisia and Kuwait Kill Dozens");  
 //   pebble_follow_add_text_blob("Protester Removes Confederate Flag at South Carolina Capitol");
 //   pebble_follow_add_text_blob("The Upshot: Where Same-Sex Couples Live");
 //   pebble_follow_add_text_blob("Jubilation, and Some Stalling, as Ruling Is Absorbed");
@@ -242,18 +246,36 @@ static void deinit(void) {
   app_sync_deinit(&s_sync);
 }
 
+void pebble_follow_text_blob_list_purge()
+{
+  TextBlobNode *next = s_text_blob_list_head;
+  while (s_list_size > TEXT_BLOB_LIST_MAX_SIZE && next != NULL)
+  {
+    next = s_text_blob_list_head->next;
+    pebble_follow_text_blob_destroy(s_text_blob_list_head->blob);
+    s_text_blob_list_head = next;
+    s_list_size--;
+  }
+}
 
 void pebble_follow_add_text_blob(const char* blobText)
 {
   if(!blobText || !strcmp(blobText,""))
     return;
   
+  pebble_follow_text_blob_list_purge();
+  
   TextBlob *blob;    
   pebble_follow_text_blob_create(blobText, &blob);
   
   s_text_blob_list_tail = pebble_follow_textbloblist_push_back(s_text_blob_list_tail, blob);
   if(s_text_blob_list_head == NULL)
+  {
     s_text_blob_list_head = s_text_blob_list_tail;
+    s_text_blob_list_pointer = s_text_blob_list_head;
+  }  
+  
+  s_list_size++;
 }
 
 int main(void) {
