@@ -10,17 +10,18 @@
   
 #define BOX_SIZE 20
 
-#define ANIM_DURATION_STEP 50
+#define ANIM_DURATION_STEP 50 //in ms
 #define ANIM_DURATION_MAX_SCALE 40 //max delay 2 second
 #define ANIM_DURATION_DELIMITER 1000 //delay 1 second between blobs
   
 #define ANIM_DELAY 0
-#define FONT_SIZE 42 //please match this with font name below
-#define PEBBLE_FOLLOW_FONT_NAME FONT_KEY_BITHAM_42_BOLD
+#define FONT_SIZE 35 //please match this with font name below
+#define PEBBLE_FOLLOW_FONT_NAME FONT_KEY_BITHAM_30_BLACK
 #define WINDOW_HEIGHT 168
 #define WINDOW_WIDTH 144
   
 #define APPROX_WORD_PER_LINE 8
+#define KEY_COUNT 0
   
 static Window *s_main_window;
 static TextLayer *s_text_flow_layer;
@@ -42,6 +43,22 @@ typedef enum {
 } AppState;
 
 static AppState s_app_state = STARTING;
+
+static AppSync s_sync;
+static uint8_t s_sync_buffer[256];
+
+static void sync_changed_handler(const uint32_t key, const Tuple *new_tuple, const Tuple *old_tuple, void *context) {
+  // Update the TextLayer output
+  //static char s_count_buffer[32];
+  //snprintf(s_count_buffer, sizeof(s_count_buffer), "Count: %d", (int)new_tuple->value->int32);
+    text_layer_set_text(s_output_layer, new_tuple->value->cstring);
+   
+}
+
+static void sync_error_handler(DictionaryResult dict_error, AppMessageResult app_message_error, void *context) {
+  // An error occured!
+  APP_LOG(APP_LOG_LEVEL_ERROR, "sync error! %d" , app_message_error);
+}
 
 // Function prototype 
 static void next_animation();
@@ -94,7 +111,7 @@ static void next_animation() {
       text_layer_set_text(s_text_flow_layer, next_word);
     } else {
       animation_set_duration((Animation*)s_text_animation, ANIM_DURATION_DELIMITER);
-      text_layer_set_text(s_text_flow_layer, "|");
+      text_layer_set_text(s_text_flow_layer, "<=>");
       s_app_state = TRANSITIONING;
     }
     
@@ -167,8 +184,8 @@ static void reset_blobs()
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
-  if(s_anim_duration_scale <= ANIM_DURATION_MAX_SCALE)
-    s_anim_duration_scale++;
+  if(s_anim_duration_scale > 1)
+    s_anim_duration_scale--;
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -179,8 +196,8 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-  if(s_anim_duration_scale >= 0)
-    s_anim_duration_scale--;
+  if(s_anim_duration_scale <= ANIM_DURATION_MAX_SCALE)
+    s_anim_duration_scale++;
 }
 
 static void click_config_provider(void *context) {
@@ -209,6 +226,18 @@ static void init(void) {
   s_app_state = RUNNING;
   // Start animation loop
   next_animation();
+  
+    // Setup AppSync
+  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+
+  // Setup initial values
+  Tuplet initial_values[] = {
+    TupletCString(KEY_COUNT, ""),
+  };
+
+  // Begin using AppSync
+  app_sync_init(&s_sync, s_sync_buffer, sizeof(s_sync_buffer), initial_values, ARRAY_LENGTH(initial_values), sync_changed_handler, sync_error_handler, NULL);
+
 }
 
 static void deinit(void) {
@@ -219,6 +248,8 @@ static void deinit(void) {
   
   // Destroy main Window
   window_destroy(s_main_window);
+  
+  app_sync_deinit(&s_sync);
 }
 
 
