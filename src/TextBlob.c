@@ -1,4 +1,4 @@
-nclude "TextBlob.h"
+#include "TextBlob.h"
 
 void pebble_follow_text_blob_create(const char *string, TextBlob **blob)
 {
