@@ -7,18 +7,22 @@
 var count = 0;
 var response;
 var emit = function() {
-  
+  if (count < response.length){
   //var text = response[count];
   var dict = {"0": response[count]};
   console.log("Sending message:"+response[count]);
   Pebble.sendAppMessage(dict);
-  count += 1;
+    count += 1;}
+  else
+    {
+      return;
+    }
 };
 
 Pebble.addEventListener('ready', function(e) {
   console.log('PebbleKit JS ready!');
   var req = new XMLHttpRequest();
-  var baseurl = "http://sudotestapp-env.elasticbeanstalk.com/index.php?category=topStories";
+  var baseurl = "http://sudotestapp-env.elasticbeanstalk.com/index.php?category=twitter";
   
     req.open('GET', baseurl, true);
     console.log(baseurl);

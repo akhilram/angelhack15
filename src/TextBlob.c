@@ -6,8 +6,8 @@ void pebble_follow_text_blob_create(const char *string, TextBlob **blob)
   (*blob)->length = strlen(string);
   //app_log(1,"TextBlob", 6, "String: %s", string);
   
-  (*blob)->text_blob = (char *)malloc((*blob)->length);
-  memset((*blob)->text_blob, '\0', (*blob)->length);
+  (*blob)->text_blob = (char *)malloc((*blob)->length + 1);
+  memset((*blob)->text_blob, '\0', (*blob)->length + 1);
   strcpy((*blob)->text_blob, string);
   
   (*blob)->current_pointer = 0;
@@ -48,7 +48,8 @@ char* pebble_follow_text_blob_get_next_word(TextBlob *blob)
    blob->current_pointer++;
   
   word[i++] = '\0';
-  char *string="";
+  char *string = (char *)malloc(i*sizeof(char));
+  memset(string, '\0', i);
   strcpy(string, word);
   
   return string;

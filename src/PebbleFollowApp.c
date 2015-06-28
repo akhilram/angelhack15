@@ -50,6 +50,7 @@ static uint8_t s_sync_buffer[2048];
 
 static void sync_changed_handler(const uint32_t key, const Tuple *new_tuple, const Tuple *old_tuple, void *context) {
   // Update the TextLayer output
+  APP_LOG(APP_LOG_LEVEL_INFO, "added string!");
   pebble_follow_add_text_blob(new_tuple->value->cstring);
 }
 
@@ -102,16 +103,16 @@ static void next_animation() {
   
   if (s_text_blob_list_pointer != NULL)
   {
-    const char* next_word = pebble_follow_text_blob_get_next_word(s_text_blob_list_pointer->blob);
+    char* next_word = pebble_follow_text_blob_get_next_word(s_text_blob_list_pointer->blob);
     if(next_word && (strcmp(next_word,"")))
     {
       animation_set_duration((Animation*)s_text_animation, calculateAnimDuration(next_word));
       text_layer_set_text(s_text_flow_layer, next_word);
     } else {
       animation_set_duration((Animation*)s_text_animation, ANIM_DURATION_DELIMITER);
-      char *string_temp = "";
-      snprintf(string_temp,1000, "<=>:%d", s_list_size);
-      text_layer_set_text(s_text_flow_layer, string_temp);
+      //char *string_temp = "";
+      //snprintf(string_temp,1000, "<=>:%d", s_list_size);
+      text_layer_set_text(s_text_flow_layer, "<=>");
       s_app_state = TRANSITIONING;
     }
 
@@ -124,6 +125,7 @@ static void next_animation() {
 //     GRect new_bounds = GRect(0, (WINDOW_HEIGHT - approxTextHeight)/2, WINDOW_WIDTH, WINDOW_HEIGHT);
     layer_set_bounds(text_layer_get_layer(s_text_flow_layer), new_bounds);
     
+    free(next_word);
   } else {
     s_app_state = COMPLETED;
     reset_blobs();
@@ -263,7 +265,7 @@ void pebble_follow_add_text_blob(const char* blobText)
   if(!blobText || !strcmp(blobText,""))
     return;
   
-  pebble_follow_text_blob_list_purge();
+  //pebble_follow_text_blob_list_purge();
   
   TextBlob *blob;    
   pebble_follow_text_blob_create(blobText, &blob);
