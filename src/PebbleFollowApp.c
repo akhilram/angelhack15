@@ -7,7 +7,7 @@
 
 #include <pebble.h>
 #include "PebbleFollowApp.h"
-
+  
 #define TEXT_BLOB_LIST_MAX_SIZE 20
 
 #define ANIM_DURATION_STEP 50 //in ms
@@ -23,6 +23,9 @@
 #define APPROX_WORD_PER_LINE 8
 #define KEY_COUNT 0
 
+static Window    *s_menu_window;
+static MenuLayer *s_menu_layer;
+   
 static Window *s_main_window;
 static TextLayer *s_text_flow_layer;
 static PropertyAnimation *s_text_animation;
@@ -48,6 +51,120 @@ static AppState s_app_state = STARTING;
 static AppSync s_sync;
 static uint8_t s_sync_buffer[2048];
 
+//Menu Stuff
+#define NUM_MENU_SECTIONS 1
+#define NUM_MENU_ITEMS 4
+  
+static uint16_t pebble_follow_menu_get_num_sections_callback(MenuLayer *menu_layer, void *data) {
+  return NUM_MENU_SECTIONS;
+}
+
+static uint16_t pebble_follow_menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) {
+  switch (section_index) {
+    case 0:
+      return NUM_MENU_ITEMS;
+    default:
+      return 0;
+  }
+}
+
+static int16_t pebble_follow_menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t section_index, void *data) {
+  return MENU_CELL_BASIC_HEADER_HEIGHT;
+}
+
+static void pebble_follow_menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, uint16_t section_index, void *data) {
+  // Determine which section we're working with
+  switch (section_index) {
+    case 0:
+      // Draw title text in the section header
+      menu_cell_basic_header_draw(ctx, cell_layer, "Categories");
+      break;
+  }
+}
+
+static void pebble_follow_menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
+  // Determine which section we're going to draw in
+  switch (cell_index->section) {
+    case 0:
+      // Use the row to specify which item we'll draw
+      switch (cell_index->row) {
+        case 0:
+          // This is a basic menu item with a title and subtitle
+          menu_cell_title_draw(ctx, cell_layer, "Top Stories");
+          break;
+        case 1:
+          // This is a basic menu icon with a cycling icon
+          menu_cell_title_draw(ctx, cell_layer, "Most Popular");
+          break;
+        case 2: 
+          // This is a basic menu icon with a cycling icon
+          menu_cell_title_draw(ctx, cell_layer, "Finance");
+          break;
+        case 3: 
+          // This is a basic menu icon with a cycling icon
+          menu_cell_title_draw(ctx, cell_layer, "Twitter");
+          break;
+      }
+      break;
+  }
+}
+
+static void pebble_follow_menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
+  // Use the row to specify which item will receive the select action
+  switch (cell_index->row) {
+    // This is the menu item with the cycling icon
+    case 0:
+    //TODO: implement
+//       // Cycle the icon
+//       s_current_icon = (s_current_icon + 1) % NUM_MENU_ICONS;
+//       // After changing the icon, mark the layer to have it updated
+//       layer_mark_dirty(menu_layer_get_layer(menu_layer));
+      break;
+  }
+
+}
+  
+static void pebble_follow_menu_window_load(Window *window) {
+  Layer *window_layer = window_get_root_layer(window);
+  GRect bounds = layer_get_frame(window_layer);
+  
+  s_menu_layer = menu_layer_create(bounds);
+  
+  menu_layer_set_callbacks(s_menu_layer, NULL, (MenuLayerCallbacks) {
+    .get_num_sections = pebble_follow_menu_get_num_sections_callback,
+    .get_num_rows = pebble_follow_menu_get_num_rows_callback,
+    .get_header_height = pebble_follow_menu_get_header_height_callback,
+    .draw_header = pebble_follow_menu_draw_header_callback,
+    .draw_row = pebble_follow_menu_draw_row_callback,
+    .select_click = pebble_follow_menu_select_callback,
+  });
+  
+  menu_layer_set_click_config_onto_window(s_menu_layer, window);
+  
+  layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
+}
+
+static void pebble_follow_menu_window_unload(Window *window)
+{
+  menu_layer_destroy(s_menu_layer);
+}
+
+static void pebble_follow_init_menu()
+{
+  s_menu_window = window_create();
+  window_set_window_handlers(s_menu_window, (WindowHandlers) {
+    .load = pebble_follow_menu_window_load,
+    .unload = pebble_follow_menu_window_unload,
+  });
+
+}
+
+static void pebble_follow_handle_menu_select()
+{
+  
+}
+
+//Sync Stuff
 static void sync_changed_handler(const uint32_t key, const Tuple *new_tuple, const Tuple *old_tuple, void *context) {
   // Update the TextLayer output
   APP_LOG(APP_LOG_LEVEL_INFO, "added string!");
@@ -190,7 +307,10 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
   if (s_app_state == PAUSED)
     s_app_state = RUNNING;
   else
+  {
     s_app_state = PAUSED;
+    window_stack_push(s_menu_window, true);  
+  }
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -235,6 +355,8 @@ static void init(void) {
   // Begin using AppSync
   app_sync_init(&s_sync, s_sync_buffer, sizeof(s_sync_buffer), initial_values, ARRAY_LENGTH(initial_values), sync_changed_handler, sync_error_handler, NULL);
 
+  //Init Menu Window
+  pebble_follow_init_menu();
 }
 
 static void deinit(void) {
