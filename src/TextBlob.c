@@ -1,4 +1,4 @@
-#include "TextBlob.h"
+nclude "TextBlob.h"
 
 void pebble_follow_text_blob_create(const char *string, TextBlob **blob)
 {
@@ -26,7 +26,7 @@ bool is_delimiter(char c)
   return false;
 }
 
-const char* pebble_follow_text_blob_get_next_word(TextBlob *blob)
+char* pebble_follow_text_blob_get_next_word(TextBlob *blob)
 {
   char word[100]; //100 max word length
   if (!blob->text_blob)

@@ -30,9 +30,9 @@ static GRect s_window_bounds = {{0, 0}, {WINDOW_WIDTH, WINDOW_HEIGHT}};
 static int s_anim_duration_scale = 10;  //scale ANIM_DURATION_STEP
 
 static TextBlob *s_text_blob;
-static TextBlob** s_text_blobs;
-static int s_text_blobs_size = 0;
-static int s_text_blobs_pointer = 0;
+static TextBlobNode* s_text_blob_list_head = NULL;
+static TextBlobNode* s_text_blob_list_tail = NULL;
+static TextBlobNode* s_text_blob_list_pointer = NULL;
 
 typedef enum {
   TRANSITIONING,
@@ -44,21 +44,21 @@ typedef enum {
 
 static AppState s_app_state = STARTING;
 
-static AppSync s_sync;
-static uint8_t s_sync_buffer[256];
+// static AppSync s_sync;
+// static uint8_t s_sync_buffer[256];
 
-static void sync_changed_handler(const uint32_t key, const Tuple *new_tuple, const Tuple *old_tuple, void *context) {
-  // Update the TextLayer output
-  //static char s_count_buffer[32];
-  //snprintf(s_count_buffer, sizeof(s_count_buffer), "Count: %d", (int)new_tuple->value->int32);
-    text_layer_set_text(s_output_layer, new_tuple->value->cstring);
+// static void sync_changed_handler(const uint32_t key, const Tuple *new_tuple, const Tuple *old_tuple, void *context) {
+//   // Update the TextLayer output
+//   //static char s_count_buffer[32];
+//   //snprintf(s_count_buffer, sizeof(s_count_buffer), "Count: %d", (int)new_tuple->value->int32);
+//     text_layer_set_text(s_output_layer, new_tuple->value->cstring);
    
-}
+// }
 
-static void sync_error_handler(DictionaryResult dict_error, AppMessageResult app_message_error, void *context) {
-  // An error occured!
-  APP_LOG(APP_LOG_LEVEL_ERROR, "sync error! %d" , app_message_error);
-}
+// static void sync_error_handler(DictionaryResult dict_error, AppMessageResult app_message_error, void *context) {
+//   // An error occured!
+//   APP_LOG(APP_LOG_LEVEL_ERROR, "sync error! %d" , app_message_error);
+// }
 
 // Function prototype 
 static void next_animation();
@@ -98,13 +98,13 @@ static void next_animation() {
   
   if(s_app_state == TRANSITIONING)
   {
-    s_text_blobs_pointer++;
+    s_text_blob_list_pointer = s_text_blob_list_pointer->next;
     s_app_state = RUNNING;
   }
   
-  if (s_text_blobs_pointer < s_text_blobs_size)
+  if (s_text_blob_list_pointer != NULL)
   {
-    const char* next_word = pebble_follow_text_blob_get_next_word(s_text_blobs[s_text_blobs_pointer]);
+    const char* next_word = pebble_follow_text_blob_get_next_word(s_text_blob_list_pointer->blob);
     if(next_word && (strcmp(next_word,"")))
     {
       animation_set_duration((Animation*)s_text_animation, calculateAnimDuration(next_word));
@@ -114,10 +114,14 @@ static void next_animation() {
       text_layer_set_text(s_text_flow_layer, "<=>");
       s_app_state = TRANSITIONING;
     }
-    
+
     int approxTextHeight = FONT_SIZE * (s_text_blob->length % APPROX_WORD_PER_LINE);
       
     GRect new_bounds = GRect(0, (WINDOW_HEIGHT - approxTextHeight)/2, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+//     int approxTextHeight = FONT_SIZE;//CHECK ME
+      
+//     GRect new_bounds = GRect(0, (WINDOW_HEIGHT - approxTextHeight)/2, WINDOW_WIDTH, WINDOW_HEIGHT);
     layer_set_bounds(text_layer_get_layer(s_text_flow_layer), new_bounds);
     
   } else {
@@ -146,41 +150,32 @@ static void main_window_unload(Window *window) {
 
 void destroy_text_blobs()
 {
-  if (s_text_blobs_size > 0)
-  {
-    for(int i=0; i<s_text_blobs_size; i++)
-    {
-      if(s_text_blobs[i])
-        pebble_follow_text_blob_destroy(s_text_blobs[i]);
-    }
-    
-    free(s_text_blobs);
-  }
+  pebble_follow_textbloblist_erase(s_text_blob_list_head);
+  s_text_blob_list_head = NULL;
+  s_text_blob_list_tail = NULL;
+  s_text_blob_list_pointer = NULL;
 }
 
 static void setup_sample_blobs()
 {
-  int size = 5;
-  TextBlob **blobs;
+  pebble_follow_add_text_blob("Terrorist Attacks in France, Tunisia and Kuwait Kill Dozens");  
+  pebble_follow_add_text_blob("Protester Removes Confederate Flag at South Carolina Capitol");
+  pebble_follow_add_text_blob("The Upshot: Where Same-Sex Couples Live");
+  pebble_follow_add_text_blob("Jubilation, and Some Stalling, as Ruling Is Absorbed");
+  pebble_follow_add_text_blob("Gunman Pursued Tourists in Slaughter at a Tunisian Hotel");  
   
-  blobs = (TextBlob**) malloc(size * sizeof(TextBlob*));  
-  
-  pebble_follow_text_blob_create("Terrorist Attacks in France, Tunisia and Kuwait Kill Dozens", &blobs[0]);
-  pebble_follow_text_blob_create("Protester Removes Confederate Flag at South Carolina Capitol", &blobs[1]);
-  pebble_follow_text_blob_create("The Upshot: Where Same-Sex Couples Live", &blobs[2]);
-  pebble_follow_text_blob_create("Jubilation, and Some Stalling, as Ruling Is Absorbed", &blobs[3]);
-  pebble_follow_text_blob_create("Gunman Pursued Tourists in Slaughter at a Tunisian Hotel", &blobs[4]);
-  
-  
-  pebble_follow_add_text_blobs(blobs, size);
+  pebble_follow_text_blob_create("Terrorist Attacks in France, Tunisia and Kuwait Kill Dozens", &s_text_blob);
 }
 
 static void reset_blobs()
 {
-  for (int i=0; i<s_text_blobs_size; i++)
-    pebble_follow_text_blob_reset(s_text_blobs[i]);
-  
-  s_text_blobs_pointer = 0;
+  TextBlobNode *curr = s_text_blob_list_head;
+  while (curr!=NULL)
+  {
+    pebble_follow_text_blob_reset(curr->blob);
+    curr = curr->next;
+  }
+  s_text_blob_list_pointer = s_text_blob_list_head;
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -221,49 +216,44 @@ static void init(void) {
   window_stack_push(s_main_window, true);
 
   setup_sample_blobs();
-  pebble_follow_text_blob_create("Terrorist Attacks in France, Tunisia and Kuwait Kill Dozens", &s_text_blob);
   
   s_app_state = RUNNING;
   // Start animation loop
   next_animation();
   
-    // Setup AppSync
-  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+//     // Setup AppSync
+//   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
 
-  // Setup initial values
-  Tuplet initial_values[] = {
-    TupletCString(KEY_COUNT, ""),
-  };
+//   // Setup initial values
+//   Tuplet initial_values[] = {
+//     TupletCString(KEY_COUNT, ""),
+//   };
 
-  // Begin using AppSync
-  app_sync_init(&s_sync, s_sync_buffer, sizeof(s_sync_buffer), initial_values, ARRAY_LENGTH(initial_values), sync_changed_handler, sync_error_handler, NULL);
+//   // Begin using AppSync
+//   app_sync_init(&s_sync, s_sync_buffer, sizeof(s_sync_buffer), initial_values, ARRAY_LENGTH(initial_values), sync_changed_handler, sync_error_handler, NULL);
 
 }
 
 static void deinit(void) {
   // Stop any animation in progress
   animation_unschedule_all();
-  pebble_follow_text_blob_destroy(s_text_blob);
   destroy_text_blobs();
   
   // Destroy main Window
   window_destroy(s_main_window);
   
-  app_sync_deinit(&s_sync);
+//   app_sync_deinit(&s_sync);
 }
 
 
-void pebble_follow_add_text_blobs(TextBlob** text_blobs, int size)
+void pebble_follow_add_text_blob(const char* blobText)
 {
-  //Destroy the already created blobs
-  destroy_text_blobs();
+  TextBlob *blob;    
+  pebble_follow_text_blob_create(blobText, &blob);
   
-  s_text_blobs = (TextBlob**) malloc(sizeof(TextBlob) * size);
-  
-  for (int i=0; i<size; i++)
-    s_text_blobs[i] = text_blobs[i];
-  
-  s_text_blobs_size = size;
+  s_text_blob_list_tail = pebble_follow_textbloblist_push_back(s_text_blob_list_tail, blob);
+  if(s_text_blob_list_head == NULL)
+    s_text_blob_list_head = s_text_blob_list_tail;
 }
 
 int main(void) {
