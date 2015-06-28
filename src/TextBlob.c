@@ -57,8 +57,11 @@ const char* pebble_follow_text_blob_get_next_word(TextBlob *blob)
 
 void pebble_follow_text_blob_destroy(TextBlob *blob)
 {
-  free(blob->text_blob);
-  free(blob);  
+  if(blob)
+  {
+    free(blob->text_blob);
+    free(blob);  
+  }
 }
 
 

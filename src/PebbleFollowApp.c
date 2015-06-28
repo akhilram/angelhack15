@@ -6,11 +6,14 @@
  */
 
 #include <pebble.h>
-#include "TextBlob.h"
+#include "PebbleFollowApp.h"
   
 #define BOX_SIZE 20
 
-#define ANIM_DURATION 500
+#define ANIM_DURATION_STEP 50
+#define ANIM_DURATION_MAX_SCALE 40 //max delay 2 second
+#define ANIM_DURATION_DELIMITER 1000 //delay 1 second between blobs
+  
 #define ANIM_DELAY 0
 #define FONT_SIZE 42 //please match this with font name below
 #define PEBBLE_FOLLOW_FONT_NAME FONT_KEY_BITHAM_42_BOLD
@@ -23,9 +26,13 @@ static Window *s_main_window;
 static TextLayer *s_text_flow_layer;
 static PropertyAnimation *s_text_animation;
 static GRect s_window_bounds = {{0, 0}, {WINDOW_WIDTH, WINDOW_HEIGHT}};
-
+static int s_anim_duration_scale = 10;  //scale ANIM_DURATION_STEP
 
 static TextBlob *s_text_blob;
+static TextBlob** s_text_blobs;
+static int s_text_blobs_size = 0;
+static int s_text_blobs_pointer = 0;
+static bool isTransitioning = false;
 
 // Function prototype 
 static void next_animation();
@@ -42,27 +49,47 @@ static void anim_stopped_handler(Animation *animation, bool finished, void *cont
   }
 }
 
+int calculateAnimDuration(const char* word)
+{
+  int delay = s_anim_duration_scale * ANIM_DURATION_STEP;
+  return delay;
+}
+
 static void next_animation() {
   // Schedule the next animation
   s_text_animation = property_animation_create_layer_frame( text_layer_get_layer(s_text_flow_layer), &s_window_bounds, &s_window_bounds);
-  animation_set_duration((Animation*)s_text_animation, ANIM_DURATION);
-  animation_set_delay((Animation*)s_text_animation, ANIM_DELAY);
   animation_set_curve((Animation*)s_text_animation, AnimationCurveEaseInOut);
   animation_set_handlers((Animation*)s_text_animation, (AnimationHandlers) {
     .stopped = anim_stopped_handler
   }, NULL);
-  
-  const char* next_word = pebble_follow_text_blob_get_next_word(s_text_blob);
-  
-  if(next_word && (strcmp(next_word,"")))
-  {
-    text_layer_set_text(s_text_flow_layer, next_word);
-    int approxTextHeight = FONT_SIZE * (s_text_blob->length % APPROX_WORD_PER_LINE);
     
+  
+  if(isTransitioning)
+  {
+    s_text_blobs_pointer++;
+    isTransitioning = false;
+  }
+  
+  if (s_text_blobs_pointer < s_text_blobs_size)
+  {
+    const char* next_word = pebble_follow_text_blob_get_next_word(s_text_blobs[s_text_blobs_pointer]);
+    if(next_word && (strcmp(next_word,"")))
+    {
+      animation_set_duration((Animation*)s_text_animation, calculateAnimDuration(next_word));
+      text_layer_set_text(s_text_flow_layer, next_word);
+    } else {
+      animation_set_duration((Animation*)s_text_animation, ANIM_DURATION_DELIMITER);
+      text_layer_set_text(s_text_flow_layer, "|");
+      isTransitioning = true;
+
+    }
+    
+    int approxTextHeight = FONT_SIZE * (s_text_blob->length % APPROX_WORD_PER_LINE);
+      
     GRect new_bounds = GRect(0, (WINDOW_HEIGHT - approxTextHeight)/2, WINDOW_WIDTH, WINDOW_HEIGHT);
     layer_set_bounds(text_layer_get_layer(s_text_flow_layer), new_bounds);
     animation_schedule((Animation*)s_text_animation);
-  }  
+  }
 }
 
 static void main_window_load(Window *window) {
@@ -81,6 +108,53 @@ static void main_window_unload(Window *window) {
   text_layer_destroy(s_text_flow_layer);
 }
 
+void destroy_text_blobs()
+{
+  if (s_text_blobs_size > 0)
+  {
+    for(int i=0; i<s_text_blobs_size; i++)
+    {
+      if(s_text_blobs[i])
+        pebble_follow_text_blob_destroy(s_text_blobs[i]);
+    }
+    
+    free(s_text_blobs);
+  }
+}
+
+static void setup_sample_blobs()
+{
+  int size = 2;
+  TextBlob **blobs;
+  
+  blobs = (TextBlob**) malloc(size * sizeof(TextBlob*));  
+  
+  pebble_follow_text_blob_create("Terrorist Attacks in France, Tunisia and Kuwait Kill Dozens", &blobs[0]);
+  pebble_follow_text_blob_create("Protester Removes Confederate Flag at South Carolina Capitol", &blobs[1]);
+  
+  pebble_follow_add_text_blobs(blobs, size);
+}
+
+static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
+  if(s_anim_duration_scale <= ANIM_DURATION_MAX_SCALE)
+    s_anim_duration_scale++;
+}
+
+static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
+}
+
+static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
+  if(s_anim_duration_scale >= 0)
+    s_anim_duration_scale--;
+}
+
+static void click_config_provider(void *context) {
+  // Register the ClickHandlers
+  window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
+  window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
+  window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
+}
+
 static void init(void) {
   // Create main Window
   s_main_window = window_create();
@@ -91,8 +165,10 @@ static void init(void) {
     .load = main_window_load,
     .unload = main_window_unload,
   });
+  window_set_click_config_provider(s_main_window, click_config_provider);
   window_stack_push(s_main_window, true);
 
+  setup_sample_blobs();
   pebble_follow_text_blob_create("Terrorist Attacks in France, Tunisia and Kuwait Kill Dozens", &s_text_blob);
   
   // Start animation loop
@@ -103,9 +179,24 @@ static void deinit(void) {
   // Stop any animation in progress
   animation_unschedule_all();
   pebble_follow_text_blob_destroy(s_text_blob);
+  destroy_text_blobs();
   
   // Destroy main Window
   window_destroy(s_main_window);
+}
+
+
+void pebble_follow_add_text_blobs(TextBlob** text_blobs, int size)
+{
+  //Destroy the already created blobs
+  destroy_text_blobs();
+  
+  s_text_blobs = (TextBlob**) malloc(sizeof(TextBlob) * size);
+  
+  for (int i=0; i<size; i++)
+    s_text_blobs[i] = text_blobs[i];
+  
+  s_text_blobs_size = size;
 }
 
 int main(void) {
