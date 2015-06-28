@@ -10,7 +10,7 @@
   
 #define BOX_SIZE 20
 
-#define ANIM_DURATION_STEP 50
+#define ANIM_DURATION_STEP 50 //in ms
 #define ANIM_DURATION_MAX_SCALE 40 //max delay 2 second
 #define ANIM_DURATION_DELIMITER 1000 //delay 1 second between blobs
   
@@ -94,7 +94,7 @@ static void next_animation() {
       text_layer_set_text(s_text_flow_layer, next_word);
     } else {
       animation_set_duration((Animation*)s_text_animation, ANIM_DURATION_DELIMITER);
-      text_layer_set_text(s_text_flow_layer, "|");
+      text_layer_set_text(s_text_flow_layer, "<=>");
       s_app_state = TRANSITIONING;
     }
     
@@ -167,8 +167,8 @@ static void reset_blobs()
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
-  if(s_anim_duration_scale <= ANIM_DURATION_MAX_SCALE)
-    s_anim_duration_scale++;
+  if(s_anim_duration_scale > 1)
+    s_anim_duration_scale--;
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -179,8 +179,8 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-  if(s_anim_duration_scale >= 0)
-    s_anim_duration_scale--;
+  if(s_anim_duration_scale <= ANIM_DURATION_MAX_SCALE)
+    s_anim_duration_scale++;
 }
 
 static void click_config_provider(void *context) {
