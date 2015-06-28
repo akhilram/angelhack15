@@ -111,17 +111,25 @@ static void pebble_follow_menu_draw_row_callback(GContext* ctx, const Layer *cel
 
 static void pebble_follow_menu_select_callback(MenuLayer *menu_layer, MenuIndex *cell_index, void *data) {
   // Use the row to specify which item will receive the select action
+  char* category = ""; 
   switch (cell_index->row) {
-    // This is the menu item with the cycling icon
     case 0:
-    //TODO: implement
-//       // Cycle the icon
-//       s_current_icon = (s_current_icon + 1) % NUM_MENU_ICONS;
-//       // After changing the icon, mark the layer to have it updated
-//       layer_mark_dirty(menu_layer_get_layer(menu_layer));
+      category = "topStories";
+      break;
+    case 1: 
+    category = "mostPopular";
+      break;
+    case 2: 
+    category = "finance";
+      break;
+    case 3: 
+    category = "twitter";
       break;
   }
-
+  set_category();
+  reset_blobs();
+  window_stack_pop(true);
+  APP_LOG(APP_LOG_LEVEL_INFO, category);
 }
   
 static void pebble_follow_menu_window_load(Window *window) {
@@ -159,10 +167,6 @@ static void pebble_follow_init_menu()
 
 }
 
-static void pebble_follow_handle_menu_select()
-{
-  
-}
 
 //Sync Stuff
 static void sync_changed_handler(const uint32_t key, const Tuple *new_tuple, const Tuple *old_tuple, void *context) {
@@ -294,6 +298,10 @@ void destroy_text_blobs()
   s_text_blob_list_tail = NULL;
   s_text_blob_list_pointer = NULL;
   s_list_size = 0;
+}
+
+static void set_category() {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Setting category");
 }
 
 static void reset_blobs()
